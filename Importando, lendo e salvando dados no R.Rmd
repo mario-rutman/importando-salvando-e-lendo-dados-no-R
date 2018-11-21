@@ -1,0 +1,144 @@
+---
+title: "Importando, salvando e lendo dados no R"
+author: "Mário Rutman"
+date: "21/11/2018"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Transformando um googlesheet em csv e importnado para o R.
+
+1º baixa o arquivo: vai no googlesheets do google drive, escolhe o arquivo e depois...
+file >>> download as >>> comma-separated values (.csv, current sheet). 
+
+Depois no Rstudio Cloud: vai no files >>> upload >>> abrir o arquivo que baixou (o download aparece no topo de uma lista). 
+RStudio cloud vai aparecer junto com outros arquivos do projeto.
+
+Agora tem que transformar este .csv em um data frame no R. Ler o .csv no R.
+Primeiro carrega o readr, depois lê o csv no R. No caso é 'planilha simplificada de divisão de gastos - Página1.csv'.
+No caso não quis pular linhas (skip = 0) e quis usar os nomes de coluna (col_names = TRUE)
+E no fim olhar as primeiras 10 linhas do objeto.
+```{r}
+library(readr)
+df_csv <- read_csv('planilha simplificada de divisão de gastos - Página1.csv',
+                   skip = 0, col_names = TRUE)
+
+head(df_csv, 10)
+```
+# Importando um .csv da internet para o googlesheets.
+Primeiro acha o link e depois cola na 1ª célula do googlesheet usando a função importData()
+=importData("https://raw.githubusercontent.com/datasets/gdp/master/data/gdp.csv")
+Pronto, nasceu uma nova planilha no googlesheets.
+
+# Exportando, escrevendo dados do R em .csv.
+Muitas vezes queremos guardar ou compatilhar nosso data frame que está em R com outros. Por isso transformá-lo em .csv.
+
+```{r}
+library(readr)
+write_csv(df_csv, path = "df_csv.csv")
+```
+
+# Transformando um googlesheet em excel e importando para o R.
+
+1º baixa o arquivo: vai no goole drive, escolhe o arquivo e depois...
+file >>> download as >>> Microsoft Excel (.xlsx). 
+
+2º no Rstudio Cloud: vai no files >>> upload >>> abrir o arquivo que baixou (o download aparece no topo de uma lista). 
+Vai aparecer junto com outros arquivos do projeto.
+
+Agora tem que transformar este .xlsx em um data frame no R. Ler o .xlsx no R.
+Primeiro carrega o readxl, depois lê o .xlsx no R. No caso é 'planilha simplificada de divisão de gastos.xlsx'.
+No caso quis pular 20 linhas(skip = 20) e não quis usar os nomes originais de coluna (col_names = FALSE).
+E no fim olhar as primeiras 5 linhas do objeto.
+```{r}
+library(readxl)
+df_xlsx <- read_excel('planilha simplificada de divisão de gastos.xlsx',
+                      skip = 20, col_names = FALSE)
+
+head(df_xlsx, 5)
+```
+
+
+# Importando dados direto do googlesheets para o R.
+Depois de instalar o pacote googlesheets.
+Carrega o pacote e faz-se a autorização.
+Usei aqui new_user = FALSE por que não sou new_user. Caso seja new_user = TRUE.
+O google vai pedir uma permissão, você dá. Vai surgir um código (tipo 4/nACytedJuOYC3TcCC6U6Q9ea7W34Z5g7Lehilqn9WNjvJENSmZgrF3A) que deve ser copiado e colado no console depois de 'Enter authorization code:'
+Pronto, está autorizado!
+
+```{r}
+library(googlesheets)
+gs_auth(new_user = FALSE)
+```
+
+
+Através do comando gs_ls() sai uma lista com todas as suas googlesheets do google drive.
+```{r}
+gs_ls()
+```
+
+Mas o que queremos é acessar e ler uma planilha específica. Por exemplo 'plan_ccat'.
+```{r}
+plan_ccat <- gs_title("plan_ccat")
+ccat_dados <- gs_read(plan_ccat)
+```
+
+
+# Pegando dados da internet "scrape".
+
+Primeiro algumas operações para conhecer os URLs.
+Precisa instalar 3 pacotes: httr, rvest, jasonlite
+Depois carrega os pacotes que serão necessários.
+Salva um user_name, no caso 'mario-rutman'
+Salva um ponto final, 'https://api.github.com/'
+Depois, compõe tudo e GET.
+Mas ainda não terminou... ainda usa um lapply com uma função para obter lista com os nomes dos repositórios e seus respectivos endereços, URLs.
+
+
+```{r}
+library(httr)
+library(dplyr)
+username <- 'mario-rutman'
+
+url_git <- 'https://api.github.com/'
+
+api_response <- GET(url = paste0(url_git, 'users/', username, '/repos'))
+
+lapply(repo_content, function(x) {
+  df <- data_frame(repo = x$name,
+                   address = x$html_url)}) %>% 
+  bind_rows()
+```
+ 	
+Agora partindo para acessar o .csv e transformá-lo em um data frame
+Faz o API request
+Depois extrai o df dele.
+```{r}
+## Make API request
+api_response <- GET(url="https://raw.githubusercontent.com/fivethirtyeight/data/master/steak-survey/steak-risk-survey.csv")
+
+## Extract content from API response
+df_steak <- content(api_response, type="text/csv")
+
+```
+
+Aqui o script não acusou erro, mas o resultado foi uma lista, não um data frame, por quê?
+R.Acho que é porque este repositpório não é público. Em outra ocasião verificarei isso.
+```{r}
+api_resp <- GET(url = "https://github.com/mario-rutman/saldo-final-maior-que-zero/blob/38db9757151d7466cf062162b5561b17e3a22dc8/fff.csv")
+saldo_final <- content(api_resp, tipe = "test/csv")
+```
+
+# O pacote rvest, vem de harvest que significa colheita, safra, resultado.
+o objetivo é fazer uma colheita de informações dos sites.
+
+
+```{r}
+# Ctrl + Alt + i cria um chunk.
+```
+
